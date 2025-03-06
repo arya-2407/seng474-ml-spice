@@ -1,3 +1,4 @@
 */data/*.pkl
 */__pycache__/*
 *.env
+.DS_*
