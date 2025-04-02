@@ -114,8 +114,7 @@ def get_filtered_review_data(
     category: str,
     min_interactions: int = 5,
     include_columns: list[str] = DEFAULT_COLUMNS,
-    num_test: int = 1,
-    num_val: int = 1,
+    test_frac: float = 0.2,
 ):
     """
     Processes data from the Amazon Reviews 2023 dataset according to selected category.
@@ -137,7 +136,7 @@ def get_filtered_review_data(
             print(f"Loading preprocessed data from {filename}")
             return pickle.load(f)
 
-    assert min_interactions > num_test + num_val
+    num_test = num_val = np.floor(min_interactions * test_frac)
 
     print("Loading raw dataset...")
     dataset = load_dataset(DATASET, "raw_review_" + category, trust_remote_code=True)
