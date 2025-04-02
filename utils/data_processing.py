@@ -128,7 +128,7 @@ def get_filtered_review_data(
     """
     folder = "data"
     os.makedirs(folder, exist_ok=True)
-    filename = f"{folder}/{category}_min{min_interactions}_test{num_test}_val{num_val}_cols{include_columns}.pkl"
+    filename = f"{folder}/{category}_min{min_interactions}_testfrac{test_frac:.02f}_cols{include_columns}.pkl"
 
     # Check if the file already exists
     if os.path.exists(filename):
@@ -136,7 +136,7 @@ def get_filtered_review_data(
             print(f"Loading preprocessed data from {filename}")
             return pickle.load(f)
 
-    num_test = num_val = np.floor(min_interactions * test_frac)
+    num_test = num_val = int(min_interactions * test_frac)
 
     print("Loading raw dataset...")
     dataset = load_dataset(DATASET, "raw_review_" + category, trust_remote_code=True)
@@ -230,3 +230,17 @@ def get_metadata(category: str, save: bool = True) -> pd.DataFrame:
             pickle.dump(df, f)
 
     return df
+
+
+def compute_user_bias(X, y):
+    """
+    Returns X, y, user_bias (map)
+
+    User ratings are normalized to a mean of 0
+    """
+    X["rating"] = y
+    user_bias = X.groupby("user_id")["rating"].mean()
+
+    y = X["rating"] - X["user_id"].map(user_bias)
+
+    return X, y, user_bias
