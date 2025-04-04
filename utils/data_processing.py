@@ -7,7 +7,7 @@ import os
 # Import utils from subfolder of project, works for immediate subfolders of PROJECT_ROOT
 PROJECT_ROOT = os.path.abspath(os.path.join(os.getcwd(), "..")) # adjust relative import as necessary
 sys.path.append(PROJECT_ROOT)
-from utils.data_processing import get_filtered_review_data, get_metadata
+from utils.data_processing import get_filtered_review_data, get_metadata, compute_user_bias
 
 X_train, y_train, X_val, y_val, X_test, y_test = get_filtered_review_data('Magazine_Subscriptions', include_columns=['user_id', 'product_id'])
 metadata = get_metadata('Magazine_Subscriptions')
@@ -232,15 +232,29 @@ def get_metadata(category: str, save: bool = True) -> pd.DataFrame:
     return df
 
 
-def compute_user_bias(X, y):
+def compute_user_bias(X_in: list[pd.DataFrame], y_in: list[np.ndarray]):
     """
-    Returns X, y, user_bias (map)
-
     User ratings are normalized to a mean of 0
+    according to concatenated dataset.
+
+    Returns normalized y arrays for each passed in,
+    as well as the user_bias map
+
+    Example usage:
+
+    >>> y_norm, user_bias = compute_user_bias([X_train, X_val], [y_train, y_val])
+
+    >>> y_train_norm, y_val_norm = y_norm
     """
+
+    assert isinstance(X_in, list)
+    assert isinstance(y_in, list)
+    assert len(X_in) == len(y_in)
+
+    X = pd.concat(X_in)
+    y = np.concatenate(y_in)
     X["rating"] = y
     user_bias = X.groupby("user_id")["rating"].mean()
 
-    y = X["rating"] - X["user_id"].map(user_bias)
-
-    return X, y, user_bias
+    y_out = [y_in[i] - X_in[i]["user_id"].map(user_bias) for i in range(len(X_in))]
+    return y_out, user_bias
